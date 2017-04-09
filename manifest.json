@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "name": "qTLS",
+  "short_name": "QTLS",
+  "version": "1.0.0",
+  "description": "Examine SSL certificates and connection statistics on the websites you visit.",
+  "background": {
+    "scripts": [ "js/background.js" ],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_icon": "icons/green-box-48x48.png",
+    "default_popup": "stats.html",
+    "default_title": "qTLS - Click for details"
+  },
+  "permissions": [ "debugger", "tabs" ]
+}
