@@ -14,6 +14,7 @@
 			    tabUrl  = tab.url;
 			chrome.debugger.onEvent.addListener(Background.onNetworkEvent);
 			chrome.debugger.attach({ tabId: tabId }, CDP_VERSION, function () {
+				chrome.debugger.sendCommand({ tabId: tabId }, 'Network.setCacheDisabled', { cacheDisabled: true });
 				chrome.debugger.sendCommand({ tabId: tabId }, 'Network.enable');
 				chrome.debugger.sendCommand({ tabId: tabId }, 'Page.reload');
 			});
