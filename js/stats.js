@@ -24,12 +24,19 @@
 	// common HTTP status codes and their definitions
 	var HTTP_STATUS_CODES = {
 		'200': 'OK',
-		'301': 'Permanently Moved',
-		'302': 'Temporarily Moved',
+		'301': 'Moved Permanently',
+		'302': 'Found',
 		'304': 'Not Modified',
+		'307': 'Temporary Redirect',
+		'400': 'Bad Request',
+		'401': 'Unauthorized',
 		'403': 'Forbidden',
 		'404': 'Not Found',
-		'500': 'Internal Server Error'
+		'405': 'Method Not Allowed',
+		'500': 'Internal Server Error',
+		'502': 'Bad Gateway',
+		'503': 'Service Unavailable',
+		'504': 'Gateway Time-out'
 	};
 
 	// segmented namespaces
@@ -199,8 +206,13 @@
 			this.toDisplayNotice();
 			return this;
 		}
+		// if our `.main` container exists (stats have already been displayed), just return
+		if (document.querySelector('.main')) {
+			return this;
+		}
 		// otherwise, get the certificate and exchange details and display in stats.html popup
 		var statsContainer     = document.querySelector('.container'),
+		    mainWrapper        = document.createElement('div'),
 		    responseDetails    = this.getResponse(),
 		    securityDetails    = this.getSecurityDetails(),
 		    certificateDetails = Utils.toFilterObject(securityDetails, CERTIFICATE_DETAILS_WHITELIST),
@@ -209,8 +221,12 @@
 		    connectionBlock    = this.untoMakeSection(connectionDetails, 'Connection', true),
 		    keyExchangeDetails = Utils.toFilterObject(securityDetails, KEY_EXCHANGE_DETAILS_WHITELIST),
 		    keyExchangeBlock   = this.untoMakeSection(keyExchangeDetails, 'Key Exchange', true);
-		// append block section(s) to `statsContainer` element
-		this.toAppendNodes(statsContainer, [certificateBlock, connectionBlock, keyExchangeBlock]);
+		// set `class` attribute on `mainWrapper`
+		mainWrapper.setAttribute('class', 'main');
+		// append `mainWrapper` to `statsContainer`
+		statsContainer.appendChild(mainWrapper);
+		// append block section(s) to `mainWrapper` element
+		this.toAppendNodes(mainWrapper, [certificateBlock, connectionBlock, keyExchangeBlock]);
 		return this;
 	};
 
