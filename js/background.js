@@ -10,8 +10,8 @@
 		}
 		// set the active tab, attach the debugger to the active tab
 		Background.setTab(function (tab) {
-			var tabId   = tab.id,
-			    tabUrl  = tab.url;
+			var tabId  = tab.id,
+			    tabUrl = tab.url;
 			chrome.debugger.onEvent.addListener(Background.onNetworkEvent);
 			chrome.debugger.attach({ tabId: tabId }, CDP_VERSION, function () {
 				chrome.debugger.sendCommand({ tabId: tabId }, 'Network.setCacheDisabled', { cacheDisabled: true });
