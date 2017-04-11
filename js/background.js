@@ -19,7 +19,11 @@
 			// set the available debugger targets
 			Background.setTargets(function (targets) {
 				// get TargetInfo structure for active tab
-				var target = Background.setTarget(targets).getTarget();
+				var target  = Background.setTarget(targets).getTarget(),
+				    message = {
+				      from:   'background',
+				      reason: 'error'
+				    };
 				// if `target` is attachable, then attach the Debugger instance to the Debuggee
 				if (!target.attached) {
 					chrome.debugger.attach({ tabId: tabId }, CDP_VERSION, function () {
@@ -28,8 +32,9 @@
 						chrome.debugger.sendCommand({ tabId: tabId }, 'Network.enable');
 						chrome.debugger.sendCommand({ tabId: tabId }, 'Page.reload');
 					});
+				// otherwise, send an error message to stats.js
 				} else {
-					chrome.runtime.sendMessage({ from: 'background', reason: 'error' });
+					chrome.runtime.sendMessage(message);
 				}
 			});
 		});
@@ -38,7 +43,12 @@
 	// `chrome.debugger.onEvent` network event handler
 	Background.onNetworkEvent = function (tab, type, event) {
 		if (type === 'Network.responseReceived' && event.type === 'Document') {
-			chrome.runtime.sendMessage({ from: 'background', reason: 'success', event: event });
+			var message = {
+			  from:   'background',
+			  reason: 'success',
+			  event:  event
+			};
+			chrome.runtime.sendMessage(message);
 			chrome.debugger.onEvent.removeListener(Background.onNetworkEvent);
 			chrome.debugger.detach({ tabId: tab.tabId });
 		}
