@@ -39,6 +39,12 @@
 		'504': 'Gateway Time-out'
 	};
 
+	// messages to display in UI
+	var UI_DISPLAY_MESSAGES = {
+		error:   'There was an error trying to debug this page. It is likely due to DevTools blocking the port.',
+		invalid: 'Metrics & statistics are only available to pages served over a secure HTTPS connection.'
+	};
+
 	// segmented namespaces
 	var Stats = {},
 	    Utils = {};
@@ -141,7 +147,7 @@
 	Stats.onLoad = function () {
 		var onMessage = Stats.onMessage.bind(Stats);
 		chrome.runtime.onMessage.addListener(onMessage);
-		chrome.runtime.sendMessage({ from: 'stats', task: 'request' });
+		chrome.runtime.sendMessage({ from: 'stats', reason: 'request' });
 	};
 
 	// `chrome.runtime.onMessage` event handler
@@ -149,7 +155,11 @@
 		if (message.from !== 'background') {
 			throw new Error('Cannot accept messages from unknown sources!');
 		}
-		// set network event object, hide loader and set stats data in popup
+		// if the message was sent due to an error (e.g. DevTools is open), display the proper notice
+		if (message.reason === 'error') {
+			return this.toHideLoader().toDisplayNotice(message.reason);
+		}
+		// otherwise, set network event object, hide loader and set stats data in popup
 		this.setNetworkEvent(message.event)
 		    .toHideLoader()
 		    .toDisplayStats();
@@ -165,7 +175,8 @@
 	 */
 
 	// display notice that metrics and stats aren't available
-	Stats.toDisplayNotice = function () {
+	Stats.toDisplayNotice = function (type) {
+		type = type || 'invalid';
 		var container = document.querySelector('.container'),
 		    title     = document.createElement('div'),
 		    message   = document.createElement('div');
@@ -173,7 +184,7 @@
 		title.textContent = 'We\'re sorry...';
 		title.setAttribute('class', 'notice-title');
 		// add notice text to `message` element
-		message.textContent = 'Metrics & statistics are only available to pages served over a secure HTTPS connection.';
+		message.textContent = UI_DISPLAY_MESSAGES[type];
 		message.setAttribute('class', 'notice-message');
 		// append `title` and `message` to `container`
 		this.toAppendNodes(container, [title, message]);
@@ -181,8 +192,9 @@
 	};
 
 	// hide loading icon upon receiving data
-	Stats.toHideLoader = function () {
-		var loader = document.querySelector('[name="loading"]');
+	Stats.toHideLoader = function (selector) {
+		selector = selector || '[name="loading"]';
+		var loader = document.querySelector(selector);
 		if (loader) {
 			loader.setAttribute('style', 'display: none !important');
 		}
