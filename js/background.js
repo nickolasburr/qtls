@@ -43,14 +43,16 @@
 	// `chrome.debugger.onEvent` network event handler
 	Background.onNetworkEvent = function (tab, type, event) {
 		if (type === 'Network.responseReceived' && event.type === 'Document') {
-			var message = {
-			  from:   'background',
-			  reason: 'success',
-			  event:  event
-			};
+			var tabId   = tab.tabId,
+			    message = {
+			      from:   'background',
+			      reason: 'success',
+			      event:  event,
+			      tabId: tabId
+			    };
 			chrome.runtime.sendMessage(message);
 			chrome.debugger.onEvent.removeListener(Background.onNetworkEvent);
-			chrome.debugger.detach({ tabId: tab.tabId });
+			chrome.debugger.detach({ tabId: tabId });
 		}
 		return this;
 	};
