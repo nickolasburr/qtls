@@ -9,7 +9,7 @@
     "persistent": true
   },
   "browser_action": {
-    "default_icon": "icons/green-box-48x48.png",
+    "default_icon": "icons/data-exchange-48x48.png",
     "default_popup": "metrics.html",
     "default_title": "qTLS - Click for details"
   },
