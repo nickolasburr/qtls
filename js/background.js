@@ -7,7 +7,7 @@
 
 	// `chrome.runtime.onMessage` event handler
 	Background.onMessage = function (message, sender) {
-		if (message.from !== 'stats') {
+		if (message.from !== 'metrics') {
 			throw new Error('Cannot accept messages from unknown sources!');
 		}
 		// set the active tab, attach the debugger to the active tab
@@ -32,7 +32,7 @@
 						chrome.debugger.sendCommand({ tabId: tabId }, 'Network.enable');
 						chrome.debugger.sendCommand({ tabId: tabId }, 'Page.reload');
 					});
-				// otherwise, send an error message to stats.js
+				// otherwise, send an error message to metrics.js
 				} else {
 					chrome.runtime.sendMessage(message);
 				}
