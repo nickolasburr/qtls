@@ -373,6 +373,8 @@
 				var entry = key + ': ' + value;
 				// set text content of `element` element
 				element.textContent = entry;
+				// set `value` tooltip via `title` attribute on `element`
+				element.setAttribute('title', value);
 			}
 			// append `element` to `wrapper`
 			wrapper.appendChild(element);
