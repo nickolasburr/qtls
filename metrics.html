@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+	<head>
+		<title>qTLS Metrics</title>
+		<script src="js/metrics.js"></script>
+		<style>
+			html {
+				min-height: 525px;
+				min-width: 525px;
+			}
+			.arrow-down {
+				width: 0; 
+				height: 0; 
+				border-left: 5px solid transparent;
+				border-right: 5px solid transparent;
+				border-top: 5px solid #000;
+			}
+			.arrow-right {
+				width: 0; 
+				height: 0; 
+				border-top: 5px solid transparent;
+				border-bottom: 5px solid transparent;
+				border-left: 5px solid #000;
+			}
+			.container {
+				margin: 0 auto;
+				width: 100%;
+			}
+			.expanded {
+				display: block !important;
+			}
+			.headline {
+				font-size: 18px;
+				text-align: center;
+			}
+			.list {
+				display: none;
+				list-style-type: decimal;
+				margin: 1em;
+				padding-left: 25px;
+			}
+			.notice-message {
+				font-size: 1rem;
+				padding: 1rem;
+			}
+			.notice-title {
+				font-size: 1.5rem;
+				margin: 2rem auto;
+				text-align: center;
+			}
+			.section {
+				background-color: lightblue;
+				border-radius: 3px;
+				padding: 5px;
+			}
+			.section div,
+			.section span {
+				display: block;
+				font-family: monospace;
+				font-size: 1em;
+				font-weight: 500;
+			}
+			.section [name="toggle"] {
+				cursor: pointer;
+				display: inline-block;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="headline">qTLS Metrics</div>
+		<div class="main">
+			<img name="loading" src="icons/loading.gif">
+		</div>
+	</body>
+</html>

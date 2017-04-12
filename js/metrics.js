@@ -42,11 +42,11 @@
 	// messages to display in UI
 	var UI_DISPLAY_MESSAGES = {
 		error:   'There was an error trying to debug this page. It is likely due to DevTools blocking the port.',
-		invalid: 'Metrics & statistics are only available to pages served over a secure HTTPS connection.'
+		invalid: 'Metrics are only available to pages served over a secure HTTPS connection.'
 	};
 
 	// segmented namespaces
-	var Stats = {},
+	var Metrics = {},
 	    Utils = {};
 
 	/**
@@ -139,60 +139,110 @@
 		return fObj;
 	};
 
+	// determine if `element` belongs to class `className`
+	Utils.hasClass = function (element, className) {
+		if (element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1)) {
+			return true;
+		}
+		return false;
+	};
+
+	// add class `className` to `element`
+	Utils.addClass = function (element, className) {
+		if (!this.hasClass(element, className)) {
+			var classAttr = element.getAttribute('class').split(' ');
+			classAttr.push(className);
+			element.setAttribute('class', classAttr.join(' '));
+		}
+		return this;
+	};
+
+	// remove class `className` from `element`
+	Utils.removeClass = function (element, className) {
+		if (this.hasClass(element, className)) {
+			var classAttr = element.getAttribute('class').split(className);
+			element.setAttribute('class', classAttr.join(' ').trim());
+		}
+		return this;
+	};
+
 	/**
-	 * Stats & metrics methods
+	 * Metrics & stats methods
 	 */
 
 	// `load` event handler
-	Stats.onLoad = function () {
-		var onMessage = Stats.onMessage.bind(Stats);
+	Metrics.onLoad = function () {
+		var onMessage = Metrics.onMessage.bind(Metrics);
 		chrome.runtime.onMessage.addListener(onMessage);
-		chrome.runtime.sendMessage({ from: 'stats', reason: 'request' });
+		chrome.runtime.sendMessage({ from: 'metrics', reason: 'request' });
 	};
 
 	// `chrome.runtime.onMessage` event handler
-	Stats.onMessage = function (message, sender) {
+	Metrics.onMessage = function (message, sender) {
 		if (message.from !== 'background') {
 			throw new Error('Cannot accept messages from unknown sources!');
 		}
 		// if the message was sent due to an error (e.g. DevTools is open), display the proper notice
 		if (message.reason === 'error') {
-			return this.toHideLoader().toDisplayNotice(message.reason);
+			return this.willHideLoader().willDisplayNotice(message.reason);
 		}
 		// otherwise, set network event object, hide loader and set stats data in popup
 		this.setNetworkEvent(message.event)
-		    .toHideLoader()
-		    .toDisplayStats();
+		    .willHideLoader()
+		    .willDisplayMetrics();
+	};
+
+	// `click` event handler
+	Metrics.onToggle = function (clickEvent) {
+		var list = clickEvent.target.parentNode.querySelector('.list');
+		if (!list) {
+			return;
+		}
+		// update arrow direction
+		if (!Utils.hasClass(clickEvent.target, 'arrow-down')) {
+			Utils.removeClass(clickEvent.target, 'arrow-right');
+			Utils.addClass(clickEvent.target, 'arrow-down');
+		} else {
+			Utils.removeClass(clickEvent.target, 'arrow-down');
+			Utils.addClass(clickEvent.target, 'arrow-right');
+		}
+		// expand/collapse list
+		if (!Utils.hasClass(list, 'expanded')) {
+			Utils.addClass(list, 'expanded');
+		} else {
+			Utils.removeClass(list, 'expanded');
+		}
+		return this;
 	};
 
 	/**
 	 * Ad-hoc action methods, written for their side effects and not suitable for template reuse.
 	 *
-	 * Conventions are as follows: Methods that start with `to` are pseudo-setters, they make
-	 * modifications to the DOM and return the main instance object (e.g. `Stats`). Methods that
-	 * start with `unto` are pseudo-getters, they create something useful for pseudo-setters, and
+	 * Conventions are as follows: Methods that start with `will` are pseudo-setters, they make
+	 * modifications to the DOM and return the main instance object (e.g. `Metrics`). Methods that
+	 * start with `make` are pseudo-getters, they create something useful for pseudo-setters, and
 	 * return that useful something to the caller (e.g. a node with data to be inserted in the DOM)
 	 */
 
 	// display notice that metrics and stats aren't available
-	Stats.toDisplayNotice = function (type) {
+	Metrics.willDisplayNotice = function (type) {
 		type = type || 'invalid';
-		var container = document.querySelector('.container'),
-		    title     = document.createElement('div'),
-		    message   = document.createElement('div');
+		var mainWrapper = document.querySelector('.main'),
+		    title       = document.createElement('div'),
+		    message     = document.createElement('div');
 		// add notice title to `title` element
 		title.textContent = 'We\'re sorry...';
 		title.setAttribute('class', 'notice-title');
 		// add notice text to `message` element
 		message.textContent = UI_DISPLAY_MESSAGES[type];
 		message.setAttribute('class', 'notice-message');
-		// append `title` and `message` to `container`
-		this.toAppendNodes(container, [title, message]);
+		// append `title` and `message` to `mainWrapper`
+		this.willAppendNodes(mainWrapper, [title, message]);
 		return this;
 	};
 
 	// hide loading icon upon receiving data
-	Stats.toHideLoader = function (selector) {
+	Metrics.willHideLoader = function (selector) {
 		selector = selector || '[name="loading"]';
 		var loader = document.querySelector(selector);
 		if (loader) {
@@ -202,7 +252,7 @@
 	};
 
 	// append nodes in `children` array to node `parent`
-	Stats.toAppendNodes = function (parent, children) {
+	Metrics.willAppendNodes = function (parent, children) {
 		var len = children.length;
 		for (var i = 0; i < len; i += 1) {
 			var child = children[i];
@@ -211,104 +261,147 @@
 		return this;
 	};
 
-	// display stats and metrics in stats.html popup
-	Stats.toDisplayStats = function () {
-		// if the state is not secure, display a notice to the user in stats.html popup
+	// display stats and metrics in metrics.html popup
+	Metrics.willDisplayMetrics = function () {
+		// if the state is not secure, display a notice to the user in metrics.html popup
 		if (!this.isStateSecure()) {
-			this.toDisplayNotice();
+			this.willDisplayNotice();
 			return this;
 		}
-		// if our `.main` container exists (stats have already been displayed), just return
-		if (document.querySelector('.main')) {
+		// if our `<div class="container">` exists (stats have already been displayed), just return
+		if (document.querySelector('.container')) {
 			return this;
 		}
-		// otherwise, get the certificate and exchange details and display in stats.html popup
-		var statsContainer     = document.querySelector('.container'),
-		    mainWrapper        = document.createElement('div'),
+		// otherwise, get the certificate and exchange details and display in metrics.html popup
+		var mainWrapper        = document.querySelector('.main'),
+		    container          = document.createElement('div'),
 		    responseDetails    = this.getResponse(),
 		    securityDetails    = this.getSecurityDetails(),
 		    certificateDetails = Utils.toFilterObject(securityDetails, CERTIFICATE_DETAILS_WHITELIST),
-		    certificateBlock   = this.untoMakeSection(certificateDetails, 'Certificate', true),
+		    certificateBlock   = this.makeSection(certificateDetails, 'Certificate', true),
 		    connectionDetails  = Utils.toFilterObject(responseDetails, CONNECTION_DETAILS_WHITELIST),
-		    connectionBlock    = this.untoMakeSection(connectionDetails, 'Connection', true),
+		    connectionBlock    = this.makeSection(connectionDetails, 'Connection', true),
 		    keyExchangeDetails = Utils.toFilterObject(securityDetails, KEY_EXCHANGE_DETAILS_WHITELIST),
-		    keyExchangeBlock   = this.untoMakeSection(keyExchangeDetails, 'Key Exchange', true);
-		// set `class` attribute on `mainWrapper`
-		mainWrapper.setAttribute('class', 'main');
-		// append `mainWrapper` to `statsContainer`
-		statsContainer.appendChild(mainWrapper);
-		// append block section(s) to `mainWrapper` element
-		this.toAppendNodes(mainWrapper, [certificateBlock, connectionBlock, keyExchangeBlock]);
+		    keyExchangeBlock   = this.makeSection(keyExchangeDetails, 'Key Exchange', true);
+		// set `class` attribute on `container`
+		container.setAttribute('class', 'container');
+		// append `container` to `mainWrapper`
+		mainWrapper.appendChild(container);
+		// append block section(s) to `container` element
+		this.willAppendNodes(container, [certificateBlock, connectionBlock, keyExchangeBlock]);
 		return this;
 	};
 
-	// create a `<section>` block element with given data
-	Stats.untoMakeSection = function (data, title) {
-		// if `data` isn't an object, throw a TypeError
-		if (typeof data !== 'object') {
-			throw new TypeError('`Stats.untoMakeSection` -> `data` must be an object!');
+	// create `<ul>` block element with given data
+	Metrics.makeList = function (data, listClass) {
+		listClass = listClass || 'list';
+		if (!Utils.isArray(data)) {
+			throw new TypeError('`Metrics.makeList` -> `data` must be an array!');
 		}
+		var list = document.createElement('ul'),
+		    len  = data.length;
+		// set `class` on `list`
+		list.setAttribute('class', listClass);
+		for (var i = 0; i < len; i += 1) {
+			var entry = data[i],
+			    item  = document.createElement('li');
+			// set text content on `item`
+			item.textContent = entry;
+			list.appendChild(item);
+		}
+		return list;
+	};
+
+	// create `<section>` block element with given data
+	Metrics.makeSection = function (data, title) {
+		// if `data` isn't an object, throw a TypeError
+		if (!Utils.isObject(data)) {
+			throw new TypeError('`Metrics.makeSection` -> `data` must be an object!');
+		}
+		// set up our DOM subtree structure
 		var section = document.createElement('section'),
-		    heading = document.createElement('h4'),
-		    preWrap = document.createElement('pre'),
-		    rawCode = document.createElement('code'),
+		    heading = document.createElement('h3'),
+		    wrapper = document.createElement('div'),
 		    keys    = Object.keys(data),
 		    len     = keys.length;
 		// set heading title text on `heading` element
 		heading.textContent = title;
+		// set `class` attribute on `wrapper`
+		wrapper.setAttribute('class', 'section');
 		// append `heading` element to `section` element
 		section.appendChild(heading);
-		// append `rawCode` element to `preWrap` element
-		preWrap.appendChild(rawCode);
-		// append `preWrap` element to `section` element
-		section.appendChild(preWrap);
+		// append `wrapper` element to `section` element
+		section.appendChild(wrapper);
 		for (var i = 0; i < len; i += 1) {
-			var key   = keys[i],
-			    value = data[key];
-			// make sure the proper HTTP status code is always present
+			var key     = keys[i],
+			    value   = data[key],
+			    element = document.createElement('span');
+			// if the response status text is unspecified, set the
+			// value to 'Unspecified' instead of leaving it empty
 			if (!value && key === 'statusText') {
 				value = !HTTP_STATUS_CODES[Utils.toString(data['status'])]
-				      ? 'Unavailable'
+				      ? 'Unspecified'
 				      : HTTP_STATUS_CODES[Utils.toString(data['status'])];
+			}
+			// if the key exchange algorithm (e.g. ECDHE_RSA, other elliptic curve algorithms)
+			// is unspecified, set the value to 'Unspecified' instead of leaving it empty
+			if (!value && key === 'keyExchange') {
+				value = 'Unspecified';
 			}
 			// convert timestamps to local time
 			if (key === 'validFrom' || key === 'validTo') {
 				var validPoint = new Date(value * 1000),
-				    validMonth = ABBR_MONTHS_OF_YEAR[validPoint.getMonth()],
 				    validDay   = validPoint.getDate(),
+				    validMonth = ABBR_MONTHS_OF_YEAR[validPoint.getMonth()],
 				    validYear  = validPoint.getFullYear();
 				// update `value` with formatted local date
 				value = validMonth + ' ' + validDay + ', ' + validYear;
 			}
-			var entry = key + ": " + value + "\n";
-			// add/update text content of `rawCode`
-			rawCode.textContent = rawCode.textContent + entry;
+			// if `value` is an array, make a list `<ul>` and append it to `element`
+			if (Utils.isArray(value)) {
+				var list   = this.makeList(value),
+				    toggle = document.createElement('span');
+				// change `element` to `<div>`
+				element = document.createElement('div');
+				element.textContent = key + ': ';
+				toggle.setAttribute('name', 'toggle');
+				toggle.setAttribute('class', 'arrow-right');
+				toggle.addEventListener('click', Metrics.onToggle, false);
+				element.appendChild(toggle);
+				element.appendChild(list);
+			} else {
+				var entry = key + ': ' + value;
+				// set text content of `element` element
+				element.textContent = entry;
+			}
+			// append `element` to `wrapper`
+			wrapper.appendChild(element);
 		}
 		return section;
 	};
 
 	/**
-	 * Stats getter/setter methods
+	 * Metrics getter/setter methods
 	 */
 
 	// set network event object
-	Stats.setNetworkEvent = function (networkEvent) {
+	Metrics.setNetworkEvent = function (networkEvent) {
 		this.networkEvent = networkEvent;
 		return this;
 	};
 
 	// get network event object
-	Stats.getNetworkEvent = function () {
+	Metrics.getNetworkEvent = function () {
 		return this.networkEvent;
 	};
 
 	// get network event response object
-	Stats.getResponse = function () {
+	Metrics.getResponse = function () {
 		return this.getNetworkEvent().response;
 	};
 
 	// get request and response headers
-	Stats.getHeaders = function () {
+	Metrics.getHeaders = function () {
 		var networkResponse = this.getResponse(),
 		    requestHeaders  = networkResponse.hasOwnProperty('requestHeaders')
 		                    ? networkResponse.requestHeaders
@@ -322,62 +415,62 @@
 	};
 
 	// get security details
-	Stats.getSecurityDetails = function () {
+	Metrics.getSecurityDetails = function () {
 		return this.getResponse().securityDetails;
 	};
 
 	// get security state (e.g. 'not secure', 'neutral', 'secure')
-	Stats.getSecurityState = function () {
+	Metrics.getSecurityState = function () {
 		return this.getResponse().securityState;
 	};
 
 	// determine if the security state is secure or not
-	Stats.isStateSecure = function () {
+	Metrics.isStateSecure = function () {
 		return !!(this.getSecurityState() === 'secure');
 	};
 
 	// get remote IP address
-	Stats.getRemoteIPAddress = function () {
+	Metrics.getRemoteIPAddress = function () {
 		return this.getResponse().remoteIPAddress;
 	};
 
 	// get remote port (e.g. HTTP -> 80, HTTPS -> 443)
-	Stats.getRemotePort = function () {
+	Metrics.getRemotePort = function () {
 		return this.getResponse().remotePort;
 	};
 
 	// get transfer protocol type (e.g. http/1.1, h2)
-	Stats.getTransferProtocol = function () {
+	Metrics.getTransferProtocol = function () {
 		return this.getResponse().protocol;
 	};
 
 	// get exchange protocol (e.g. TLS 1.1, TLS 1.2)
-	Stats.getExchangeProtocol = function () {
+	Metrics.getExchangeProtocol = function () {
 		return this.getSecurityDetails().protocol;
 	};
 
-	Stats.getKeyExchange = function () {
+	Metrics.getKeyExchange = function () {
 		return this.getSecurityDetails().keyExchange;
 	};
 
-	Stats.getKeyExchangeGroup = function () {
+	Metrics.getKeyExchangeGroup = function () {
 		return this.getSecurityDetails().keyExchangeGroup;
 	};
 
 	// get cipher type (e.g. AES_128_GCM)
-	Stats.getCipher = function () {
+	Metrics.getCipher = function () {
 		return this.getSecurityDetails().cipher;
 	};
 
 	// get certificate issuer (e.g. Comodo, DigiCert)
-	Stats.getCertificateIssuer = function () {
+	Metrics.getCertificateIssuer = function () {
 		return this.getSecurityDetails().issuer;
 	};
 
 	// get certificate subject name
-	Stats.getCertificateSubjectName = function () {
+	Metrics.getCertificateSubjectName = function () {
 		return this.getSecurityDetails().subjectName;
 	};
 
-	window.addEventListener('load', Stats.onLoad, false);
+	window.addEventListener('load', Metrics.onLoad, false);
 }).call(this);
