@@ -13,6 +13,21 @@
 		'keyExchangeGroup', 'protocol'
 	];
 
+	// external references for certain value types
+	var VALUES_EXTERNAL_REFERENCES = {
+		'cipher': {
+			'AES_128_GCM': 'https://tools.ietf.org/html/rfc5288#section-3',
+			'AES_256_GCM': 'https://tools.ietf.org/html/rfc5288#section-3'
+		},
+		'keyExchange': {
+			'ECDHE_RSA': 'https://tools.ietf.org/html/rfc4492#section-2.4'
+		},
+		'keyExchangeGroup': {
+			'P-256': 'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
+			'X25519': 'https://tools.ietf.org/html/rfc7748#section-5'
+		}
+	};
+
 	// abbreviated months of the year, listed in zero-index array
 	var ABBR_MONTHS_OF_YEAR = [
 		'Jan', 'Feb', 'Mar',
@@ -137,6 +152,24 @@
 			}
 		}
 		return fObj;
+	};
+
+	// check if `key` exists and, if so, does `subkey` have an external reference?
+	Utils.hasExternalReference = function (key, subkey) {
+		var keys    = Object.keys(VALUES_EXTERNAL_REFERENCES),
+		    subkeys = this.inArray(key, keys)
+		            ? Object.keys(VALUES_EXTERNAL_REFERENCES[key])
+		            : [];
+		console.log(this.inArray(subkey, subkeys));
+		return !!(this.inArray(subkey, subkeys));
+	};
+
+	// get external reference with `key` and `subkey`
+	Utils.getExternalReference = function (key, subkey) {
+		if (VALUES_EXTERNAL_REFERENCES.hasOwnProperty(key) && VALUES_EXTERNAL_REFERENCES[key].hasOwnProperty(subkey)) {
+			return VALUES_EXTERNAL_REFERENCES[key][subkey];
+		}
+		return null;
 	};
 
 	// determine if `element` belongs to class `className`
@@ -369,6 +402,20 @@
 				toggle.addEventListener('click', Metrics.onToggle, false);
 				element.appendChild(toggle);
 				element.appendChild(list);
+			// otherwise, just update `element` with text content and tooltip
+			} else if (Utils.hasExternalReference(key, value)) {
+				var link = document.createElement('a'),
+				    href = Utils.getExternalReference(key, value);
+				// set `href` and `target` attributes on `link`
+				link.setAttribute('href', href);
+				link.setAttribute('target', '_' + value);
+				// set text content on `link` and `element`
+				element.textContent = key + ': ';
+				link.textContent    = value;
+				// set `value` tooltip via `title` attribute on `element`
+				element.setAttribute('title', value);
+				// append `link` to `element`
+				element.appendChild(link);
 			} else {
 				var entry = key + ': ' + value;
 				// set text content of `element` element
