@@ -64,7 +64,7 @@
 
 	// segmented namespaces
 	var Metrics = {},
-	    Utils = {};
+	    Utils   = {};
 
 	/**
 	 * Utility, convenience methods
@@ -88,48 +88,46 @@
 	 * array literal, array instance, etc.
 	 */
 	Utils.isObject = function (obj) {
-		if (obj instanceof Object) {
-			return true;
-		}
-		return false;
+		return !!(obj instanceof Object);
 	};
 
 	/**
 	 * determine if `obj` is an object constructed from the native
 	 * 'Object' prototype and not a different type of object prototype
 	 */
-	 Utils.isObjectNative = function (obj) {
-	 	if (obj instanceof Object && obj.__proto__.constructor.name === 'Object') {
-	 		return true;
-	 	}
-	 	return false;
-	 };
+	Utils.isNativeObject = function (obj) {
+		return !!(obj instanceof Object && obj.__proto__.constructor.name === 'Object');
+	};
 
 	// determine if object is empty or not
 	Utils.isObjectEmpty = function (obj) {
-		if (typeof obj !== 'object') {
-			throw new TypeError('Argument must be an object, not a ' + typeof obj);
+		if (!this.isObject(obj)) {
+			throw new TypeError('`Utils.isObjectEmpty` -> Argument must be an object, not a ' + typeof obj);
 		}
 		return !Object.keys(obj).length;
 	};
 
-	// determine if object is an array
-	Utils.isArray = function (obj) {
-		if (obj instanceof Array) {
-			return true;
-		}
-		return false;
+	// determine if `arr` implements Array interface
+	Utils.isArray = function (arr) {
+		return !!(arr instanceof Array);
 	};
 
-	// determine if `needle` is in array `haystack`
+	// determine if `needle` is in `haystack`
 	Utils.inArray = function (needle, haystack) {
 		if (!this.isArray(haystack)) {
 			throw new TypeError('`Utils.inArray` -> `haystack` must be an array, not a ' + typeof haystack);
 		}
-		if (haystack.indexOf(needle) > -1) {
-			return true;
-		}
-		return false;
+		return !!(haystack.indexOf(needle) > -1);
+	};
+
+	// determine if `element` is a valid HTMLElement object
+	Utils.isElement = function (element) {
+		return !!(element instanceof HTMLElement);
+	};
+
+	// determine if `func` is a Function
+	Utils.isFunction = function (func) {
+		return !!(typeof func === 'function' && func instanceof Function);
 	};
 
 	// filter object properties via whitelist of keys
@@ -137,12 +135,12 @@
 		whitelist = whitelist || [];
 		var fObj = {};
 		// `obj` must be a native object, otherwise throw a TypeError
-		if (!this.isObjectNative(obj)) {
-			throw new TypeError('`Utils.toFilterObject` -> `obj` must be a native object!');
+		if (!this.isNativeObject(obj)) {
+			throw new TypeError('`Utils.toFilterObject` -> `obj` must be a native Object!');
 		}
 		// `whitelist` must be an array, otherwise throw a TypeError
 		if (!this.isArray(whitelist)) {
-			throw new TypeError('`Utils.toFilterObject` -> `whitelist` must be an array!');
+			throw new TypeError('`Utils.toFilterObject` -> `whitelist` must be an Array!');
 		}
 		var keys = Object.keys(obj),
 		    len  = keys.length;
@@ -175,10 +173,7 @@
 
 	// determine if `element` belongs to class `className`
 	Utils.hasClass = function (element, className) {
-		if (element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1)) {
-			return true;
-		}
-		return false;
+		return !!(element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1));
 	};
 
 	// add class `className` to `element`
@@ -287,11 +282,67 @@
 
 	// append nodes in `children` array to node `parent`
 	Metrics.willAppendNodes = function (parent, children) {
+		if (Utils.isElement(children)) {
+			parent.appendChild(children);
+			return this;
+		}
+		if (!Utils.isArray(children)) {
+			throw new TypeError('`Metrics.willAppendNodes` -> `children` must either be an HTMLElement or an Array!');
+		}
 		var len = children.length;
 		for (var i = 0; i < len; i += 1) {
 			var child = children[i];
 			parent.appendChild(child);
 		}
+		return this;
+	};
+
+	// attach event listener(s) to `element`
+	Metrics.willAttachListeners = function (element, listeners) {
+		if (!Utils.isElement(element)) {
+			throw new TypeError('`Metrics.willAttachListeners` -> `element` must be an HTMLElement!');
+		}
+		if (!Utils.isNativeObject(listeners)) {
+			throw new TypeError('`Metrics.willAttachListeners` -> `listeners` must be a native Object!');
+		}
+		var keys = Object.keys(listeners),
+		    len  = keys.length;
+		for (var i = 0; i < len; i += 1) {
+			var type = keys[i],
+			    func = listeners[type];
+			if (!Utils.isFunction(func)) {
+				throw new TypeError('`Metrics.willAttachListeners` -> `func` must be a Function!');
+			}
+			element.addEventListener(type, func, false);
+		}
+		return this;
+	};
+
+	// set attribute(s) on `element`
+	Metrics.willSetAttributes = function (element, attributes) {
+		if (!Utils.isElement(element)) {
+			throw new TypeError('`Metrics.willSetAttributes` -> `element` must be an HTMLElement!');
+		}
+		if (!Utils.isNativeObject(attributes)) {
+			throw new TypeError('`Metrics.willSetAttributes` -> `attributes` must be a native Object!');
+		}
+		var keys = Object.keys(attributes),
+		    len  = keys.length;
+		for (var i = 0; i < len; i += 1) {
+			var key   = keys[i],
+			    value = attributes[key];
+			// set attribute `key` -> `value` on `element`
+			element.setAttribute(key, value);
+		}
+		return this;
+	};
+
+	// set text content on `element`
+	Metrics.willSetTextContent = function (element, text) {
+		if (!Utils.isElement(element)) {
+			throw new TypeError('`Metrics.willSetTextContent` -> `element` must be an HTMLElement!');
+		}
+		element.textContent = text;
 		return this;
 	};
 
@@ -307,22 +358,23 @@
 			return this;
 		}
 		// otherwise, get the certificate and exchange details and display in metrics.html popup
-		var mainWrapper        = document.querySelector('.main'),
-		    container          = document.createElement('div'),
-		    responseDetails    = this.getResponse(),
-		    securityDetails    = this.getSecurityDetails(),
-		    certificateDetails = Utils.toFilterObject(securityDetails, CERTIFICATE_DETAILS_WHITELIST),
-		    certificateBlock   = this.makeSection(certificateDetails, 'Certificate', true),
-		    connectionDetails  = Utils.toFilterObject(responseDetails, CONNECTION_DETAILS_WHITELIST),
-		    connectionBlock    = this.makeSection(connectionDetails, 'Connection', true),
-		    encryptionDetails  = Utils.toFilterObject(securityDetails, ENCRYPTION_DETAILS_WHITELIST),
-		    encryptionBlock    = this.makeSection(encryptionDetails, 'Encryption', true);
+		var wrapper     = document.querySelector('.main'),
+		    container   = document.createElement('div'),
+		    response    = this.getResponse(),
+		    security    = this.getSecurityDetails(),
+		    certificate = Utils.toFilterObject(security, CERTIFICATE_DETAILS_WHITELIST),
+		    connection  = Utils.toFilterObject(response, CONNECTION_DETAILS_WHITELIST),
+		    encryption  = Utils.toFilterObject(security, ENCRYPTION_DETAILS_WHITELIST);
 		// set `class` attribute on `container`
-		container.setAttribute('class', 'container');
-		// append `container` to `mainWrapper`
-		mainWrapper.appendChild(container);
-		// append block section(s) to `container` element
-		this.willAppendNodes(container, [certificateBlock, connectionBlock, encryptionBlock]);
+		this.willSetAttributes(container, {
+			'class': 'container'
+		})
+		.willAppendNodes(wrapper, container)
+		.willAppendNodes(container, [
+			this.makeSection(certificate, 'Certificate'),
+			this.makeSection(connection,  'Connection'),
+			this.makeSection(encryption,  'Encryption')
+		]);
 		return this;
 	};
 
@@ -346,6 +398,22 @@
 		return list;
 	};
 
+	// create formatted date from timestamp
+	Metrics.makeDate = function (timestamp) {
+		var date  = new Date(timestamp * 1000),
+		    month = ABBR_MONTHS_OF_YEAR[date.getMonth()],
+		    day   = date.getDate(),
+		    year  = date.getFullYear();
+		// return formatted local date
+		return (month + ' ' + day + ', ' + year);
+	};
+
+	// create formatted line entry to display in popup
+	Metrics.makeEntry = function (key, value, sep) {
+		sep = sep || ': ';
+		return (key + sep + value);
+	};
+
 	// create `<section>` block element with given data
 	Metrics.makeSection = function (data, title) {
 		// if `data` isn't an object, throw a TypeError
@@ -360,12 +428,15 @@
 		    len     = keys.length;
 		// set heading title text on `heading` element
 		heading.textContent = title;
-		// set `class` attribute on `wrapper`
-		wrapper.setAttribute('class', 'section');
-		// append `heading` element to `section` element
-		section.appendChild(heading);
-		// append `wrapper` element to `section` element
-		section.appendChild(wrapper);
+		// set `class` attribute on `wrapper`, append both
+		// `heading` and `wrapper` elements to `section`
+		this.willSetAttributes(wrapper, {
+			'class': 'section'
+		})
+		.willAppendNodes(section, [
+			heading,
+			wrapper
+		]);
 		for (var i = 0; i < len; i += 1) {
 			var key     = keys[i],
 			    value   = data[key],
@@ -373,9 +444,9 @@
 			// if the response status text is unspecified, set the
 			// value to 'Unspecified' instead of leaving it empty
 			if (!value && key === 'statusText') {
-				value = !HTTP_STATUS_CODES[Utils.toString(data['status'])]
-				      ? 'Unspecified'
-				      : HTTP_STATUS_CODES[Utils.toString(data['status'])];
+				value = HTTP_STATUS_CODES[Utils.toString(data['status'])]
+				      ? HTTP_STATUS_CODES[Utils.toString(data['status'])]
+				      : 'Unspecified';
 			}
 			// if the key exchange algorithm (e.g. ECDHE_RSA, other elliptic curve algorithms)
 			// is unspecified, set the value to 'Unspecified' instead of leaving it empty
@@ -384,12 +455,8 @@
 			}
 			// convert timestamps to local time
 			if (key === 'validFrom' || key === 'validTo') {
-				var validPoint = new Date(value * 1000),
-				    validDay   = validPoint.getDate(),
-				    validMonth = ABBR_MONTHS_OF_YEAR[validPoint.getMonth()],
-				    validYear  = validPoint.getFullYear();
 				// update `value` with formatted local date
-				value = validMonth + ' ' + validDay + ', ' + validYear;
+				value = this.makeDate(value);
 			}
 			// if `value` is an array, make a list `<ul>` and append it to `element`
 			if (Utils.isArray(value)) {
@@ -397,35 +464,49 @@
 				    toggle = document.createElement('span');
 				// change `element` to `<div>`
 				element = document.createElement('div');
-				element.textContent = key + ': ';
-				toggle.setAttribute('name', 'toggle');
-				toggle.setAttribute('class', 'arrow-right');
-				toggle.addEventListener('click', Metrics.onToggle, false);
-				element.appendChild(toggle);
-				element.appendChild(list);
+				// set text content on `element`, attach `click` event listener to `toggle`,
+				// set `name` and `class` attributes on `toggle`,
+				// append `toggle` and `list` elements to `element`
+				this.willSetTextContent(element, this.makeEntry(key, ''))
+				    .willAttachListeners(toggle, {
+				      'click': this.onToggle
+				    })
+				    .willSetAttributes(toggle, {
+				      'name':  'toggle',
+				      'class': 'arrow-right'
+				    })
+				    .willAppendNodes(element, [
+				      toggle, list
+				    ]);
 			// otherwise, just update `element` with text content and tooltip
 			} else if (Utils.hasExternalReference(key, value)) {
 				var link = document.createElement('a'),
 				    href = Utils.getExternalReference(key, value);
 				// set `href` and `target` attributes on `link`
-				link.setAttribute('href', href);
-				link.setAttribute('target', '_' + value);
+				this.willSetAttributes(link, {
+					'href':   href,
+					'target': ('_' + value)
+				});
 				// set text content on `link` and `element`
-				element.textContent = key + ': ';
+				element.textContent = this.makeEntry(key, '');
 				link.textContent    = value;
-				// set `value` tooltip via `title` attribute on `element`
-				element.setAttribute('title', value);
-				// append `link` to `element`
-				element.appendChild(link);
+				// set `value` tooltip via `title` attribute
+				// on `element`, append `link` to `element`
+				this.willSetAttributes(element, {
+					'title': value
+				})
+				.willAppendNodes(element, link);
 			} else {
-				var entry = key + ': ' + value;
+				var entry = this.makeEntry(key, value);
 				// set text content of `element` element
 				element.textContent = entry;
 				// set `value` tooltip via `title` attribute on `element`
-				element.setAttribute('title', value);
+				this.willSetAttributes(element, {
+					'title': value
+				});
 			}
 			// append `element` to `wrapper`
-			wrapper.appendChild(element);
+			this.willAppendNodes(wrapper, element);
 		}
 		return section;
 	};
