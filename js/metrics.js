@@ -24,6 +24,7 @@
 		},
 		'keyExchangeGroup': {
 			'P-256': 'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
+			'P-384': 'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
 			'X25519': 'https://tools.ietf.org/html/rfc7748#section-5'
 		}
 	};
