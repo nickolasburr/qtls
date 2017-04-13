@@ -161,7 +161,6 @@
 		    subkeys = this.inArray(key, keys)
 		            ? Object.keys(VALUES_EXTERNAL_REFERENCES[key])
 		            : [];
-		console.log(this.inArray(subkey, subkeys));
 		return !!(this.inArray(subkey, subkeys));
 	};
 
