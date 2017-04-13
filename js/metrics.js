@@ -8,7 +8,7 @@
 		'mimeType', 'protocol', 'remoteIPAddress',
 		'remotePort', 'status', 'statusText', 'url'
 	],
-	KEY_EXCHANGE_DETAILS_WHITELIST = [
+	ENCRYPTION_DETAILS_WHITELIST = [
 		'cipher', 'keyExchange',
 		'keyExchangeGroup', 'protocol'
 	];
@@ -315,14 +315,14 @@
 		    certificateBlock   = this.makeSection(certificateDetails, 'Certificate', true),
 		    connectionDetails  = Utils.toFilterObject(responseDetails, CONNECTION_DETAILS_WHITELIST),
 		    connectionBlock    = this.makeSection(connectionDetails, 'Connection', true),
-		    keyExchangeDetails = Utils.toFilterObject(securityDetails, KEY_EXCHANGE_DETAILS_WHITELIST),
-		    keyExchangeBlock   = this.makeSection(keyExchangeDetails, 'Key Exchange', true);
+		    encryptionDetails  = Utils.toFilterObject(securityDetails, ENCRYPTION_DETAILS_WHITELIST),
+		    encryptionBlock    = this.makeSection(encryptionDetails, 'Encryption', true);
 		// set `class` attribute on `container`
 		container.setAttribute('class', 'container');
 		// append `container` to `mainWrapper`
 		mainWrapper.appendChild(container);
 		// append block section(s) to `container` element
-		this.willAppendNodes(container, [certificateBlock, connectionBlock, keyExchangeBlock]);
+		this.willAppendNodes(container, [certificateBlock, connectionBlock, encryptionBlock]);
 		return this;
 	};
 
