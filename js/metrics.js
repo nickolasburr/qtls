@@ -20,11 +20,12 @@
 			'AES_256_GCM': 'https://tools.ietf.org/html/rfc5288#section-3'
 		},
 		'keyExchange': {
-			'ECDHE_RSA': 'https://tools.ietf.org/html/rfc4492#section-2.4'
+			'ECDHE_ECDSA': 'https://tools.ietf.org/html/rfc4492#section-2.2',
+			'ECDHE_RSA':   'https://tools.ietf.org/html/rfc4492#section-2.4'
 		},
 		'keyExchangeGroup': {
-			'P-256': 'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
-			'P-384': 'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
+			'P-256':  'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
+			'P-384':  'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
 			'X25519': 'https://tools.ietf.org/html/rfc7748#section-5'
 		}
 	};
