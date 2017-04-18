@@ -80,6 +80,11 @@
 		return +value;
 	};
 
+	// coerce `value` to boolean
+	Utils.toBoolean = function (value) {
+		return !!(value);
+	};
+
 	/**
 	 * determine if `obj` is of type 'object'
 	 *
@@ -88,7 +93,7 @@
 	 * array literal, array instance, etc.
 	 */
 	Utils.isObject = function (obj) {
-		return !!(obj instanceof Object);
+		return this.toBoolean(obj instanceof Object);
 	};
 
 	/**
@@ -96,7 +101,7 @@
 	 * 'Object' prototype and not a different type of object prototype
 	 */
 	Utils.isNativeObject = function (obj) {
-		return !!(obj instanceof Object && obj.__proto__.constructor.name === 'Object');
+		return this.toBoolean(obj instanceof Object && obj.__proto__.constructor.name === 'Object');
 	};
 
 	// determine if object is empty or not
@@ -109,7 +114,7 @@
 
 	// determine if `arr` implements Array interface
 	Utils.isArray = function (arr) {
-		return !!(arr instanceof Array);
+		return this.toBoolean(arr instanceof Array);
 	};
 
 	// determine if `needle` is in `haystack`
@@ -117,17 +122,17 @@
 		if (!this.isArray(haystack)) {
 			throw new TypeError('`Utils.inArray` -> `haystack` must be an array, not a ' + typeof haystack);
 		}
-		return !!(haystack.indexOf(needle) > -1);
+		return this.toBoolean(haystack.indexOf(needle) > -1);
 	};
 
 	// determine if `element` is a valid HTMLElement object
 	Utils.isElement = function (element) {
-		return !!(element instanceof HTMLElement);
+		return this.toBoolean(element instanceof HTMLElement);
 	};
 
 	// determine if `func` is a Function
 	Utils.isFunction = function (func) {
-		return !!(typeof func === 'function' && func instanceof Function);
+		return this.toBoolean(typeof func === 'function' && func instanceof Function);
 	};
 
 	// filter object properties via whitelist of keys
@@ -160,7 +165,7 @@
 		    subkeys = this.inArray(key, keys)
 		            ? Object.keys(VALUES_EXTERNAL_REFERENCES[key])
 		            : [];
-		return !!(this.inArray(subkey, subkeys));
+		return this.toBoolean(this.inArray(subkey, subkeys));
 	};
 
 	// get external reference with `key` and `subkey`
@@ -173,7 +178,7 @@
 
 	// determine if `element` belongs to class `className`
 	Utils.hasClass = function (element, className) {
-		return !!(element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1));
+		return this.toBoolean(element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1));
 	};
 
 	// add class `className` to `element`
@@ -557,7 +562,7 @@
 
 	// determine if the security state is secure or not
 	Metrics.isStateSecure = function () {
-		return !!(this.getSecurityState() === 'secure');
+		return Utils.toBoolean(this.getSecurityState() === 'secure');
 	};
 
 	// get remote IP address
