@@ -13,8 +13,8 @@
 		'keyExchangeGroup', 'protocol'
 	];
 
-	// external references for certain value types
-	var VALUES_EXTERNAL_REFERENCES = {
+	// external references for certain Encryption value types
+	var ENCRYPTION_EXTERN_REFS = {
 		'cipher': {
 			'AES_128_GCM': 'https://tools.ietf.org/html/rfc5288#section-3',
 			'AES_256_GCM': 'https://tools.ietf.org/html/rfc5288#section-3'
@@ -27,6 +27,9 @@
 			'P-256':  'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
 			'P-384':  'http://csrc.nist.gov/groups/ST/toolkit/documents/dss/NISTReCur.pdf',
 			'X25519': 'https://tools.ietf.org/html/rfc7748#section-5'
+		},
+		'protocol': {
+			'QUIC': 'https://www.chromium.org/quic'
 		}
 	};
 
@@ -67,17 +70,24 @@
 	    Utils   = {};
 
 	/**
+	 *
 	 * Utility, convenience methods
+	 *
 	 */
+
+	// get primitive type of `value`
+	Utils.getType = function (value) {
+		return (typeof value);
+	};
 
 	// coerce `value` to string
 	Utils.toString = function (value) {
-		return String(value);
+		return ('' + value);
 	};
 
 	// coerce `value` to number
 	Utils.toNumber = function (value) {
-		return +value;
+		return +(value);
 	};
 
 	// coerce `value` to boolean
@@ -135,6 +145,14 @@
 		return this.toBoolean(typeof func === 'function' && func instanceof Function);
 	};
 
+	// get keys from object
+	Utils.getKeys = function (obj) {
+		if (!this.isObject(obj)) {
+			throw new TypeError('`Utils.getKeys` -> Argument must be an object, not a ' + typeof obj);
+		}
+		return Object.keys(obj);
+	};
+
 	// filter object properties via whitelist of keys
 	Utils.toFilterObject = function (obj, whitelist) {
 		whitelist = whitelist || [];
@@ -147,7 +165,7 @@
 		if (!this.isArray(whitelist)) {
 			throw new TypeError('`Utils.toFilterObject` -> `whitelist` must be an Array!');
 		}
-		var keys = Object.keys(obj),
+		var keys = this.getKeys(obj),
 		    len  = keys.length;
 		// remove unwanted properties from `obj`
 		for (var i = 0; i < len; i += 1) {
@@ -161,17 +179,17 @@
 
 	// check if `key` exists and, if so, does `subkey` have an external reference?
 	Utils.hasExternalReference = function (key, subkey) {
-		var keys    = Object.keys(VALUES_EXTERNAL_REFERENCES),
+		var keys    = this.getKeys(ENCRYPTION_EXTERN_REFS),
 		    subkeys = this.inArray(key, keys)
-		            ? Object.keys(VALUES_EXTERNAL_REFERENCES[key])
+		            ? this.getKeys(ENCRYPTION_EXTERN_REFS[key])
 		            : [];
 		return this.toBoolean(this.inArray(subkey, subkeys));
 	};
 
 	// get external reference with `key` and `subkey`
 	Utils.getExternalReference = function (key, subkey) {
-		if (VALUES_EXTERNAL_REFERENCES.hasOwnProperty(key) && VALUES_EXTERNAL_REFERENCES[key].hasOwnProperty(subkey)) {
-			return VALUES_EXTERNAL_REFERENCES[key][subkey];
+		if (ENCRYPTION_EXTERN_REFS.hasOwnProperty(key) && ENCRYPTION_EXTERN_REFS[key].hasOwnProperty(subkey)) {
+			return ENCRYPTION_EXTERN_REFS[key][subkey];
 		}
 		return null;
 	};
@@ -201,7 +219,9 @@
 	};
 
 	/**
+	 *
 	 * Metrics & stats methods
+	 *
 	 */
 
 	// `load` event handler
@@ -250,28 +270,33 @@
 	};
 
 	/**
-	 * Ad-hoc action methods, written for their side effects and not suitable for template reuse.
+	 * Ad-hoc action methods, written for side effects and not suitable for template reuse.
 	 *
-	 * Conventions are as follows: Methods that start with `will` are pseudo-setters, they make
-	 * modifications to the DOM and return the main instance object (e.g. `Metrics`). Methods that
-	 * start with `make` are pseudo-getters, they create something useful for pseudo-setters, and
-	 * return that useful something to the caller (e.g. a node with data to be inserted in the DOM)
+	 * Conventions include: Methods that start with `will` are pseudo-setters, they make
+	 * modifications to the DOM and return the main object (e.g. `Metrics`). Methods that
+	 * start with `make` are pseudo-getters, they create something useful for pseudo-setters,
+	 * and return that useful something to the caller (e.g. a DOM node with formatted data)
 	 */
 
 	// display notice that metrics and stats aren't available
 	Metrics.willDisplayNotice = function (type) {
 		type = type || 'invalid';
-		var mainWrapper = document.querySelector('.main'),
-		    title       = document.createElement('div'),
-		    message     = document.createElement('div');
+		var wrapper = document.querySelector('.main'),
+		    title   = document.createElement('div'),
+		    message = document.createElement('div');
 		// add notice title to `title` element
-		title.textContent = 'We\'re sorry...';
-		title.setAttribute('class', 'notice-title');
-		// add notice text to `message` element
-		message.textContent = UI_DISPLAY_MESSAGES[type];
-		message.setAttribute('class', 'notice-message');
-		// append `title` and `message` to `mainWrapper`
-		this.willAppendNodes(mainWrapper, [title, message]);
+		this.willSetAttributes(title, {
+		      'class': 'notice-title'
+		    })
+		    .willSetAttributes(message, {
+		      'class': 'notice-message'
+		    })
+		    .willSetTextContent(title, "We're sorry...")
+		    .willSetTextContent(message, UI_DISPLAY_MESSAGES[type])
+		    // append `title`, `message` to `wrapper`
+		    .willAppendNodes(wrapper, [
+		      title, message
+		    ]);
 		return this;
 	};
 
@@ -310,13 +335,13 @@
 		if (!Utils.isNativeObject(listeners)) {
 			throw new TypeError('`Metrics.willAttachListeners` -> `listeners` must be a native Object!');
 		}
-		var keys = Object.keys(listeners),
+		var keys = Utils.getKeys(listeners),
 		    len  = keys.length;
 		for (var i = 0; i < len; i += 1) {
 			var type = keys[i],
 			    func = listeners[type];
 			if (!Utils.isFunction(func)) {
-				throw new TypeError('`Metrics.willAttachListeners` -> `func` must be a Function!');
+				throw new TypeError('`Metrics.willAttachListeners` -> `func` must be a Function, not a(n) ' + Utils.getType(func));
 			}
 			element.addEventListener(type, func, false);
 		}
@@ -331,7 +356,7 @@
 		if (!Utils.isNativeObject(attributes)) {
 			throw new TypeError('`Metrics.willSetAttributes` -> `attributes` must be a native Object!');
 		}
-		var keys = Object.keys(attributes),
+		var keys = Utils.getKeys(attributes),
 		    len  = keys.length;
 		for (var i = 0; i < len; i += 1) {
 			var key   = keys[i],
@@ -347,7 +372,7 @@
 		if (!Utils.isElement(element)) {
 			throw new TypeError('`Metrics.willSetTextContent` -> `element` must be an HTMLElement!');
 		}
-		element.textContent = text;
+		element.textContent = Utils.toString(text);
 		return this;
 	};
 
@@ -372,14 +397,14 @@
 		    encryption  = Utils.toFilterObject(security, ENCRYPTION_DETAILS_WHITELIST);
 		// set `class` attribute on `container`
 		this.willSetAttributes(container, {
-			'class': 'container'
-		})
-		.willAppendNodes(wrapper, container)
-		.willAppendNodes(container, [
-			this.makeSection(certificate, 'Certificate'),
-			this.makeSection(connection,  'Connection'),
-			this.makeSection(encryption,  'Encryption')
-		]);
+		      'class': 'container'
+		    })
+		    .willAppendNodes(wrapper, container)
+		    .willAppendNodes(container, [
+		      this.makeSection(certificate, 'Certificate'),
+		      this.makeSection(connection,  'Connection'),
+		      this.makeSection(encryption,  'Encryption')
+		    ]);
 		return this;
 	};
 
@@ -432,16 +457,17 @@
 		    keys    = Object.keys(data),
 		    len     = keys.length;
 		// set heading title text on `heading` element
-		heading.textContent = title;
-		// set `class` attribute on `wrapper`, append both
-		// `heading` and `wrapper` elements to `section`
-		this.willSetAttributes(wrapper, {
-			'class': 'section'
-		})
-		.willAppendNodes(section, [
-			heading,
-			wrapper
-		]);
+		this.willSetTextContent(heading, title)
+		    // set `class` attribute on `wrapper`, append both
+		    // `heading` and `wrapper` elements to `section`
+		    .willSetAttributes(wrapper, {
+		      'class': 'section'
+		    })
+		    .willAppendNodes(section, [
+		      heading,
+		      wrapper
+		    ]);
+		// create the DOM subtree, fill in our data
 		for (var i = 0; i < len; i += 1) {
 			var key     = keys[i],
 			    value   = data[key],
@@ -465,9 +491,8 @@
 			}
 			// if `value` is an array, make a list `<ul>` and append it to `element`
 			if (Utils.isArray(value)) {
-				var list   = this.makeList(value),
-				    toggle = document.createElement('span');
-				// change `element` to `<div>`
+				var toggle = document.createElement('span');
+				// change `element` to `<div>` instead of `<span>`
 				element = document.createElement('div');
 				// set text content on `element`, attach `click` event listener to `toggle`,
 				// set `name` and `class` attributes on `toggle`,
@@ -481,34 +506,40 @@
 				      'class': 'arrow-right'
 				    })
 				    .willAppendNodes(element, [
-				      toggle, list
+				      toggle, this.makeList(value)
 				    ]);
 			// otherwise, just update `element` with text content and tooltip
 			} else if (Utils.hasExternalReference(key, value)) {
+				// external reference link `<a>` element
 				var link = document.createElement('a'),
-				    href = Utils.getExternalReference(key, value);
+				    img  = document.createElement('img');
 				// set `href` and `target` attributes on `link`
 				this.willSetAttributes(link, {
-					'href':   href,
-					'target': ('_' + value)
-				});
-				// set text content on `link` and `element`
-				element.textContent = this.makeEntry(key, '');
-				link.textContent    = value;
-				// set `value` tooltip via `title` attribute
-				// on `element`, append `link` to `element`
-				this.willSetAttributes(element, {
-					'title': value
-				})
-				.willAppendNodes(element, link);
+				      'href':   Utils.getExternalReference(key, value),
+				      'target': ('_' + value)
+				    })
+				    .willSetAttributes(img, {
+				      'class':  'ref',
+				      'height': '16',
+				      'width':  '16',
+				      'src':    'icons/external-link-16x16.png'
+				    })
+				    // set text content on `element`
+				    .willSetTextContent(element, this.makeEntry(key, value))
+				    // set `value` tooltip via `title` attribute
+				    // on `element`, append `link` to `element`
+				    .willSetAttributes(element, {
+				      'title': value
+				    })
+				    .willAppendNodes(link, img)
+				    .willAppendNodes(element, link);
 			} else {
-				var entry = this.makeEntry(key, value);
 				// set text content of `element` element
-				element.textContent = entry;
-				// set `value` tooltip via `title` attribute on `element`
-				this.willSetAttributes(element, {
-					'title': value
-				});
+				this.willSetTextContent(element, this.makeEntry(key, value))
+				    // set `value` tooltip via `title` attribute on `element`
+				    .willSetAttributes(element, {
+				      'title': value
+				    });
 			}
 			// append `element` to `wrapper`
 			this.willAppendNodes(wrapper, element);
