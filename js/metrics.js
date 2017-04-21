@@ -1,4 +1,6 @@
 (function () {
+	'use strict';
+
 	// stats & metrics whitelist by type
 	var CERTIFICATE_DETAILS_WHITELIST = [
 		'issuer', 'sanList', 'subjectName',
@@ -248,17 +250,18 @@
 
 	// `click` event handler
 	Metrics.onToggle = function (clickEvent) {
-		var list = clickEvent.target.parentNode.querySelector('.list');
+		var target = clickEvent.target,
+		    list   = target.parentNode.querySelector('.list');
 		if (!list) {
 			return;
 		}
 		// update arrow direction
-		if (!Utils.hasClass(clickEvent.target, 'arrow-down')) {
-			Utils.removeClass(clickEvent.target, 'arrow-right');
-			Utils.addClass(clickEvent.target, 'arrow-down');
+		if (!Utils.hasClass(target, 'arrow-down')) {
+			Utils.removeClass(target, 'arrow-right')
+			     .addClass(target, 'arrow-down');
 		} else {
-			Utils.removeClass(clickEvent.target, 'arrow-down');
-			Utils.addClass(clickEvent.target, 'arrow-right');
+			Utils.removeClass(target, 'arrow-down')
+			     .addClass(target, 'arrow-right');
 		}
 		// expand/collapse list
 		if (!Utils.hasClass(list, 'expanded')) {
