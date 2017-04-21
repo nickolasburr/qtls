@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "qTLS",
   "short_name": "QTLS",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Examine SSL certificates and connection metrics on the websites you visit.",
   "background": {
     "scripts": [ "js/background.js" ],
