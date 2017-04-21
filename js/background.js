@@ -179,10 +179,6 @@
 		return this;
 	};
 
-	/**
-	 * Background getter/setter methods
-	 */
-
 	// get all targets available to `chrome.debugger`
 	Background.getTargets = function () {
 		return this.targets;
