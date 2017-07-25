@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
 	<head>
-		<title>qTLS Metrics</title>
+		<title>qTLS</title>
 		<script src="js/metrics.js"></script>
 		<style>
 			html {
@@ -11,6 +11,7 @@
 				min-height: 435px;
 				width: 435px;
 			}
+
 			.arrow-down {
 				width: 0; 
 				height: 0; 
@@ -18,6 +19,7 @@
 				border-right: 4px solid transparent;
 				border-top: 6px solid #000;
 			}
+
 			.arrow-right {
 				width: 0; 
 				height: 0; 
@@ -25,49 +27,55 @@
 				border-left: 6px solid #000;
 				border-top: 4px solid transparent;
 			}
+
 			.container {
 				margin: 0 auto;
 				width: 100%;
 			}
+
 			.expanded {
 				display: block !important;
 			}
-			.headline {
-				font-size: 18px;
-				text-align: center;
-			}
+
 			img[name="loading"] {
 				margin: auto;
 				width: 100%;
 			}
+
 			.list {
 				display: none;
 				list-style-type: decimal;
 				margin: 1em;
 				padding-left: 25px;
 			}
+
 			.notice-message {
 				font-size: 1rem;
 				padding: 1rem;
 			}
+
 			.notice-title {
 				font-size: 1.5rem;
 				margin: 2rem auto;
 				text-align: center;
 			}
+
 			.ref {
 				margin: 0 0 -3px 5px;
 			}
+
 			.section {
 				background-color: lightblue;
 				border-radius: 3px;
 				padding: 3px;
 			}
+
 			.section a {
 				color: #000;
 				font-weight: 600;
 				text-decoration: none;
 			}
+
 			.section div,
 			.section span {
 				display: block;
@@ -79,6 +87,7 @@
 				text-overflow: ellipsis;
 				white-space: nowrap;
 			}
+
 			.section [name="toggle"] {
 				cursor: pointer;
 				display: inline-block;
@@ -88,7 +97,6 @@
 		</style>
 	</head>
 	<body>
-		<div class="headline">qTLS Metrics</div>
 		<div class="main">
 			<img name="loading" src="icons/loading.gif">
 		</div>
