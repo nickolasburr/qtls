@@ -32,6 +32,6 @@ qTLS is available via Chrome Web Store [here](https://chrome.google.com/webstore
 
 ## Preview
 
-![qTLS Preview One](/nickolasburr/qtls/blob/master/preview/one.jpg)
+![qTLS Preview One](https://github.com/nickolasburr/qtls/blob/master/preview/one.jpg?raw=true)
 
-![qTLS Preview Two](/nickolasburr/qtls/blob/master/preview/two.jpg)
+![qTLS Preview Two](https://github.com/nickolasburr/qtls/blob/master/preview/two.jpg?raw=true)
