@@ -2,10 +2,12 @@
   "manifest_version": 2,
   "name": "qTLS",
   "short_name": "QTLS",
-  "version": "1.0.1",
-  "description": "Examine SSL certificates and connection metrics on the websites you visit.",
+  "version": "1.0.2",
+  "description": "Examine HTTPS connections on the fly.",
   "background": {
-    "scripts": [ "js/background.js" ],
+    "scripts": [
+      "js/background.js"
+    ],
     "persistent": true
   },
   "browser_action": {
@@ -19,6 +21,7 @@
     "128": "icons/data-exchange-128x128.png"
   },
   "permissions": [
-    "debugger", "tabs"
+    "debugger",
+    "tabs"
   ]
 }
