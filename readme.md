@@ -1,5 +1,37 @@
 # qTLS
 
-qTLS is a Chrome extension for examining SSL certificates, as well as connection and encryption information on the websites you visit.
+qTLS is a Chrome extension which allows you to examine HTTPS connections on the fly.
 
-You can now find it on the Chrome Web Store [here](https://chrome.google.com/webstore/detail/qtls/mlhndmhjkoeggdhifdlglkldgppjifpf).
+## Analytics
+
+qTLS provides the following information:
+
++ Certificate
+	- Issuer
+	- SAN List
+	- Subject Name
+	- Valid From
+	- Valid To
++ Encryption
+	- Cipher
+	- Key Exchange
+	- Key Exchange Group
+	- Cryptographic Protocol (e.g. TLS 1.2)
++ Transfer
+	- MIME Type
+	- Application Protocol (e.g. HTTP/1.1)
+	- Remote IP Address
+	- Remote Port (e.g. 443)
+	- Response Status Code (e.g. 200)
+	- Response Status Text (e.g. OK)
+	- URL
+
+## Installation
+
+qTLS is available via Chrome Web Store [here](https://chrome.google.com/webstore/detail/qtls/mlhndmhjkoeggdhifdlglkldgppjifpf). You can also pack the extension locally when Developer Mode is enabled.
+
+## Preview
+
+![qTLS Preview One](/nickolasburr/qtls/master/preview/one.jpg)
+
+![qTLS Preview Two](/nickolasburr/qtls/master/preview/two.jpg)
