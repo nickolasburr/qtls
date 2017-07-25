@@ -405,8 +405,8 @@
 		    .willAppendNodes(wrapper, container)
 		    .willAppendNodes(container, [
 		      this.makeSection(certificate, 'Certificate'),
-		      this.makeSection(connection,  'Connection'),
-		      this.makeSection(encryption,  'Encryption')
+		      this.makeSection(encryption,  'Encryption'),
+		      this.makeSection(connection,  'Transfer')
 		    ]);
 		return this;
 	};
