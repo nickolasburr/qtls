@@ -1,5 +1,1 @@
-*.swp
-*.tar.gz
-*.tgz
-*.zip
-
+*.sw[po]
