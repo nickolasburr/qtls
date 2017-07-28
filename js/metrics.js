@@ -454,8 +454,6 @@
 		    connection  = this.toFilterObject(response, CONNECTION_DETAILS_WHITELIST),
 		    encryption  = this.toFilterObject(security, ENCRYPTION_DETAILS_WHITELIST);
 
-		console.log(response);
-
 		// Set `class` attribute on `container`
 		this.willSetAttributes(container, {
 		      'class': 'container'
@@ -578,7 +576,7 @@
 				// append `toggle` and `list` elements to `element`
 				this.willSetTextContent(element, this.makeEntry(key, ''))
 				    .willAttachListeners(toggle, {
-				      'click': this.onToggle
+				      'click': this.onToggle.bind(this)
 				    })
 				    .willSetAttributes(toggle, {
 				      'name':  'toggle',
