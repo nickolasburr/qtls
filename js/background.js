@@ -121,13 +121,13 @@
 					      reason: 'error'
 					    };
 
-					// If `target` is attachable, then attach the Debugger instance to the Debuggee
+					// If `target` is attachable, then attach Debugger instance to the Debuggee
 					if (!target.attached) {
 						chrome.debugger.attach(tabInfo, CDP_VERSION, function () {
 							// Disable cached responses from being served
 							chrome.debugger.sendCommand(tabInfo, 'Network.setCacheDisabled', { cacheDisabled: true });
 							chrome.debugger.sendCommand(tabInfo, 'Network.enable');
-							chrome.debugger.sendCommand(tabInfo, 'Page.reload');
+							chrome.tabs.sendMessage(tabId, { from: 'background', url: tabUrl });
 						});
 					// Otherwise, send an error message to metrics.js
 					} else {
@@ -140,7 +140,7 @@
 
 	// `chrome.debugger.onEvent` network event handler
 	Background.onNetworkEvent = function (tab, type, event) {
-		if (type === 'Network.responseReceived' && event.type === 'Document') {
+		if (type === 'Network.responseReceived') {
 			var tabId   = tab.tabId,
 			    message = {
 			      from:   'background',
