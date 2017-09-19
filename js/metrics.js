@@ -1,18 +1,27 @@
 (function () {
 	'use strict';
 
-	// stats & metrics whitelist by type
 	var CERTIFICATE_DETAILS_WHITELIST = [
-		'issuer', 'sanList', 'subjectName',
-		'validFrom', 'validTo'
+		'issuer',
+		'sanList',
+		'subjectName',
+		'validFrom',
+		'validTo'
 	],
 	CONNECTION_DETAILS_WHITELIST = [
-		'mimeType', 'protocol', 'remoteIPAddress',
-		'remotePort', 'status', 'statusText', 'url'
+		'mimeType',
+		'protocol',
+		'remoteIPAddress',
+		'remotePort',
+		'status',
+		'statusText',
+		'url'
 	],
 	ENCRYPTION_DETAILS_WHITELIST = [
-		'cipher', 'keyExchange',
-		'keyExchangeGroup', 'protocol'
+		'cipher',
+		'keyExchange',
+		'keyExchangeGroup',
+		'protocol'
 	];
 
 	// external references for certain Encryption value types
@@ -35,15 +44,23 @@
 		}
 	};
 
-	// abbreviated months of the year, listed in zero-index array
+	// Abbreviated months of the year
 	var ABBR_MONTHS_OF_YEAR = [
-		'Jan', 'Feb', 'Mar',
-		'Apr', 'May', 'Jun',
-		'Jul', 'Aug', 'Sept',
-		'Oct', 'Nov', 'Dec'
+		'Jan',
+		'Feb',
+		'Mar',
+		'Apr',
+		'May',
+		'Jun',
+		'Jul',
+		'Aug',
+		'Sept',
+		'Oct',
+		'Nov',
+		'Dec'
 	];
 
-	// common HTTP status codes and their definitions
+	// Common HTTP status codes and their definitions
 	var HTTP_STATUS_CODES = {
 		'200': 'OK',
 		'301': 'Moved Permanently',
@@ -61,162 +78,167 @@
 		'504': 'Gateway Time-out'
 	};
 
-	// messages to display in UI
+	// Messages to display in UI
 	var UI_DISPLAY_MESSAGES = {
 		error:   'There was an error trying to debug this page. It is likely due to DevTools blocking the port.',
 		invalid: 'Metrics are only available to pages served over a secure HTTPS connection.'
 	};
 
-	// segmented namespaces
-	var Metrics = {},
-	    Utils   = {};
+	var Utils = {};
 
-	/**
-	 *
-	 * Utility, convenience methods
-	 *
-	 */
-
-	// get primitive type of `value`
+	// Get primitive type of `value`
 	Utils.getType = function (value) {
 		return (typeof value);
 	};
 
-	// coerce `value` to string
+	// Coerce `value` to string
 	Utils.toString = function (value) {
 		return ('' + value);
 	};
 
-	// coerce `value` to number
+	// Coerce `value` to number
 	Utils.toNumber = function (value) {
 		return +(value);
 	};
 
-	// coerce `value` to boolean
-	Utils.toBoolean = function (value) {
+	// Coerce `value` to boolean
+	Utils.toBool = function (value) {
 		return !!(value);
 	};
 
 	/**
-	 * determine if `obj` is of type 'object'
+	 * Determine if `obj` is of type 'object'
 	 *
 	 * @note this is a very loose check on the type 'object',
 	 * meaning this could be an object literal, object instance
 	 * array literal, array instance, etc.
 	 */
 	Utils.isObject = function (obj) {
-		return this.toBoolean(obj instanceof Object);
+		return this.toBool(obj instanceof Object);
 	};
 
 	/**
-	 * determine if `obj` is an object constructed from the native
+	 * Determine if `obj` is an object constructed from the native
 	 * 'Object' prototype and not a different type of object prototype
 	 */
 	Utils.isNativeObject = function (obj) {
-		return this.toBoolean(obj instanceof Object && obj.__proto__.constructor.name === 'Object');
+		return this.toBool(obj instanceof Object && obj.__proto__.constructor.name === 'Object');
 	};
 
-	// determine if object is empty or not
+	// Determine if object is empty or not
 	Utils.isObjectEmpty = function (obj) {
 		if (!this.isObject(obj)) {
 			throw new TypeError('`Utils.isObjectEmpty` -> Argument must be an object, not a ' + typeof obj);
 		}
+
 		return !Object.keys(obj).length;
 	};
 
-	// determine if `arr` implements Array interface
+	// Determine if `arr` implements Array interface
 	Utils.isArray = function (arr) {
-		return this.toBoolean(arr instanceof Array);
+		return this.toBool(arr instanceof Array);
 	};
 
-	// determine if `needle` is in `haystack`
+	// Determine if `needle` is in `haystack`
 	Utils.inArray = function (needle, haystack) {
 		if (!this.isArray(haystack)) {
 			throw new TypeError('`Utils.inArray` -> `haystack` must be an array, not a ' + typeof haystack);
 		}
-		return this.toBoolean(haystack.indexOf(needle) > -1);
+
+		return this.toBool(haystack.indexOf(needle) > -1);
 	};
 
-	// determine if `element` is a valid HTMLElement object
+	// Determine if `element` is a valid HTMLElement object
 	Utils.isElement = function (element) {
-		return this.toBoolean(element instanceof HTMLElement);
+		return this.toBool(element instanceof HTMLElement);
 	};
 
-	// determine if `func` is a Function
-	Utils.isFunction = function (func) {
-		return this.toBoolean(typeof func === 'function' && func instanceof Function);
+	// Determine if `func` is a Function
+	Utils.isFunc = function (func) {
+		return this.toBool(typeof func === 'function' && func instanceof Function);
 	};
 
-	// get keys from object
+	// Get keys from object
 	Utils.getKeys = function (obj) {
 		if (!this.isObject(obj)) {
 			throw new TypeError('`Utils.getKeys` -> Argument must be an object, not a ' + typeof obj);
 		}
+
 		return Object.keys(obj);
 	};
 
-	// filter object properties via whitelist of keys
+	// Filter object properties via whitelist of keys
 	Utils.toFilterObject = function (obj, whitelist) {
 		whitelist = whitelist || [];
 		var fObj = {};
+
 		// `obj` must be a native object, otherwise throw a TypeError
 		if (!this.isNativeObject(obj)) {
 			throw new TypeError('`Utils.toFilterObject` -> `obj` must be a native Object!');
 		}
+
 		// `whitelist` must be an array, otherwise throw a TypeError
 		if (!this.isArray(whitelist)) {
 			throw new TypeError('`Utils.toFilterObject` -> `whitelist` must be an Array!');
 		}
+
 		var keys = this.getKeys(obj),
 		    len  = keys.length;
-		// remove unwanted properties from `obj`
+
+		// Remove unwanted properties from `obj`
 		for (var i = 0; i < len; i += 1) {
 			var key = keys[i];
+
 			if (this.inArray(key, whitelist)) {
 				fObj[key] = obj[key];
 			}
 		}
+
 		return fObj;
 	};
 
-	// check if `key` exists and, if so, does `subkey` have an external reference?
+	// Check if `key` exists and, if so, does `subkey` have an external reference?
 	Utils.hasExternalReference = function (key, subkey) {
 		var keys    = this.getKeys(ENCRYPTION_EXTERN_REFS),
 		    subkeys = this.inArray(key, keys)
 		            ? this.getKeys(ENCRYPTION_EXTERN_REFS[key])
 		            : [];
-		return this.toBoolean(this.inArray(subkey, subkeys));
+
+		return this.toBool(this.inArray(subkey, subkeys));
 	};
 
-	// get external reference with `key` and `subkey`
+	// Get external reference with `key` and `subkey`
 	Utils.getExternalReference = function (key, subkey) {
 		if (ENCRYPTION_EXTERN_REFS.hasOwnProperty(key) && ENCRYPTION_EXTERN_REFS[key].hasOwnProperty(subkey)) {
 			return ENCRYPTION_EXTERN_REFS[key][subkey];
 		}
+
 		return null;
 	};
 
-	// determine if `element` belongs to class `className`
+	// Determine if `element` belongs to class `className`
 	Utils.hasClass = function (element, className) {
-		return this.toBoolean(element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1));
+		return this.toBool(element.hasAttribute('class') && (element.getAttribute('class').split(className).length - 1));
 	};
 
-	// add class `className` to `element`
+	// Add class `className` to `element`
 	Utils.addClass = function (element, className) {
 		if (!this.hasClass(element, className)) {
 			var classAttr = element.getAttribute('class').split(' ');
 			classAttr.push(className);
 			element.setAttribute('class', classAttr.join(' '));
 		}
+
 		return this;
 	};
 
-	// remove class `className` from `element`
+	// Remove class `className` from `element`
 	Utils.removeClass = function (element, className) {
 		if (this.hasClass(element, className)) {
 			var classAttr = element.getAttribute('class').split(className);
 			element.setAttribute('class', classAttr.join(' ').trim());
 		}
+
 		return this;
 	};
 
@@ -225,6 +247,8 @@
 	 * Metrics & stats methods
 	 *
 	 */
+
+	var Metrics = Object.create(Utils);
 
 	// `load` event handler
 	Metrics.onLoad = function () {
@@ -238,11 +262,13 @@
 		if (message.from !== 'background') {
 			throw new Error('Cannot accept messages from unknown sources!');
 		}
-		// if the message was sent due to an error (e.g. DevTools is open), display the proper notice
+
+		// If the message was sent due to an error (e.g. DevTools is open), display the proper notice
 		if (message.reason === 'error') {
 			return this.willHideLoader().willDisplayNotice(message.reason);
 		}
-		// otherwise, set network event object, hide loader and set stats data in popup
+
+		// Otherwise, set network event object, hide loader and set stats data in popup
 		this.setNetworkEvent(message.event)
 		    .willHideLoader()
 		    .willDisplayMetrics();
@@ -252,23 +278,27 @@
 	Metrics.onToggle = function (clickEvent) {
 		var target = clickEvent.target,
 		    list   = target.parentNode.querySelector('.list');
+
 		if (!list) {
 			return;
 		}
-		// update arrow direction
-		if (!Utils.hasClass(target, 'arrow-down')) {
-			Utils.removeClass(target, 'arrow-right')
-			     .addClass(target, 'arrow-down');
+
+		// Update arrow direction
+		if (!this.hasClass(target, 'arrow-down')) {
+			this.removeClass(target, 'arrow-right')
+			    .addClass(target, 'arrow-down');
 		} else {
-			Utils.removeClass(target, 'arrow-down')
-			     .addClass(target, 'arrow-right');
+			this.removeClass(target, 'arrow-down')
+			    .addClass(target, 'arrow-right');
 		}
-		// expand/collapse list
-		if (!Utils.hasClass(list, 'expanded')) {
-			Utils.addClass(list, 'expanded');
+
+		// Expand/collapse list
+		if (!this.hasClass(list, 'expanded')) {
+			this.addClass(list, 'expanded');
 		} else {
-			Utils.removeClass(list, 'expanded');
+			this.removeClass(list, 'expanded');
 		}
+
 		return this;
 	};
 
@@ -281,13 +311,15 @@
 	 * and return that useful something to the caller (e.g. a DOM node with formatted data)
 	 */
 
-	// display notice that metrics and stats aren't available
+	// Display notice that metrics and stats aren't available
 	Metrics.willDisplayNotice = function (type) {
 		type = type || 'invalid';
+
 		var wrapper = document.querySelector('.main'),
 		    title   = document.createElement('div'),
 		    message = document.createElement('div');
-		// add notice title to `title` element
+
+		// Add notice title to `title` element
 		this.willSetAttributes(title, {
 		      'class': 'notice-title'
 		    })
@@ -296,109 +328,133 @@
 		    })
 		    .willSetTextContent(title, "We're sorry...")
 		    .willSetTextContent(message, UI_DISPLAY_MESSAGES[type])
-		    // append `title`, `message` to `wrapper`
+		    // Append `title`, `message` to `wrapper`
 		    .willAppendNodes(wrapper, [
 		      title, message
 		    ]);
+
 		return this;
 	};
 
-	// hide loading icon upon receiving data
+	// Hide loading icon upon receiving data
 	Metrics.willHideLoader = function (selector) {
 		selector = selector || '[name="loading"]';
+
 		var loader = document.querySelector(selector);
+
 		if (loader) {
 			loader.setAttribute('style', 'display: none !important');
 		}
+
 		return this;
 	};
 
-	// append nodes in `children` array to node `parent`
+	// Append nodes in `children` array to node `parent`
 	Metrics.willAppendNodes = function (parent, children) {
-		if (Utils.isElement(children)) {
+		if (this.isElement(children)) {
 			parent.appendChild(children);
 			return this;
 		}
-		if (!Utils.isArray(children)) {
+
+		if (!this.isArray(children)) {
 			throw new TypeError('`Metrics.willAppendNodes` -> `children` must either be an HTMLElement or an Array!');
 		}
+
 		var len = children.length;
+
 		for (var i = 0; i < len; i += 1) {
 			var child = children[i];
 			parent.appendChild(child);
 		}
+
 		return this;
 	};
 
-	// attach event listener(s) to `element`
+	// Attach event listener(s) to `element`
 	Metrics.willAttachListeners = function (element, listeners) {
-		if (!Utils.isElement(element)) {
+		if (!this.isElement(element)) {
 			throw new TypeError('`Metrics.willAttachListeners` -> `element` must be an HTMLElement!');
 		}
-		if (!Utils.isNativeObject(listeners)) {
+
+		if (!this.isNativeObject(listeners)) {
 			throw new TypeError('`Metrics.willAttachListeners` -> `listeners` must be a native Object!');
 		}
-		var keys = Utils.getKeys(listeners),
+
+		var keys = this.getKeys(listeners),
 		    len  = keys.length;
+
 		for (var i = 0; i < len; i += 1) {
 			var type = keys[i],
 			    func = listeners[type];
-			if (!Utils.isFunction(func)) {
-				throw new TypeError('`Metrics.willAttachListeners` -> `func` must be a Function, not a(n) ' + Utils.getType(func));
+
+			if (!this.isFunc(func)) {
+				throw new TypeError('`Metrics.willAttachListeners` -> `func` must be a Function, not a(n) ' + this.getType(func));
 			}
+
 			element.addEventListener(type, func, false);
 		}
+
 		return this;
 	};
 
-	// set attribute(s) on `element`
+	// Set attribute(s) on `element`
 	Metrics.willSetAttributes = function (element, attributes) {
-		if (!Utils.isElement(element)) {
+		if (!this.isElement(element)) {
 			throw new TypeError('`Metrics.willSetAttributes` -> `element` must be an HTMLElement!');
 		}
-		if (!Utils.isNativeObject(attributes)) {
+
+		if (!this.isNativeObject(attributes)) {
 			throw new TypeError('`Metrics.willSetAttributes` -> `attributes` must be a native Object!');
 		}
-		var keys = Utils.getKeys(attributes),
+
+		var keys = this.getKeys(attributes),
 		    len  = keys.length;
+
 		for (var i = 0; i < len; i += 1) {
 			var key   = keys[i],
 			    value = attributes[key];
-			// set attribute `key` -> `value` on `element`
+
+			// Set attribute `key` -> `value` on `element`
 			element.setAttribute(key, value);
 		}
+
 		return this;
 	};
 
-	// set text content on `element`
+	// Set text content on `element`
 	Metrics.willSetTextContent = function (element, text) {
-		if (!Utils.isElement(element)) {
+		if (!this.isElement(element)) {
 			throw new TypeError('`Metrics.willSetTextContent` -> `element` must be an HTMLElement!');
 		}
-		element.textContent = Utils.toString(text);
+
+		element.textContent = this.toString(text);
+
 		return this;
 	};
 
-	// display stats and metrics in metrics.html popup
+	// Display stats and metrics in metrics.html popup
 	Metrics.willDisplayMetrics = function () {
-		// if the state is not secure, display a notice to the user in metrics.html popup
+		// If the state is not secure, display a notice to the user in metrics.html popup
 		if (!this.isStateSecure()) {
 			this.willDisplayNotice();
 			return this;
 		}
-		// if our `<div class="container">` exists (stats have already been displayed), just return
+
+		// If our `<div class="container">` exists (stats have already been displayed), just return
 		if (document.querySelector('.container')) {
 			return this;
 		}
-		// otherwise, get the certificate and exchange details and display in metrics.html popup
+
+		// Otherwise, get the certificate and exchange details and display in metrics.html popup
 		var wrapper     = document.querySelector('.main'),
 		    container   = document.createElement('div'),
 		    response    = this.getResponse(),
 		    security    = this.getSecurityDetails(),
-		    certificate = Utils.toFilterObject(security, CERTIFICATE_DETAILS_WHITELIST),
-		    connection  = Utils.toFilterObject(response, CONNECTION_DETAILS_WHITELIST),
-		    encryption  = Utils.toFilterObject(security, ENCRYPTION_DETAILS_WHITELIST);
-		// set `class` attribute on `container`
+		    certificate = this.toFilterObject(security, CERTIFICATE_DETAILS_WHITELIST),
+		    connection  = this.toFilterObject(response, CONNECTION_DETAILS_WHITELIST),
+		    encryption  = this.toFilterObject(security, ENCRYPTION_DETAILS_WHITELIST);
+
+		// Set `class` attribute on `container`
 		this.willSetAttributes(container, {
 		      'class': 'container'
 		    })
@@ -408,60 +464,71 @@
 		      this.makeSection(encryption,  'Encryption'),
 		      this.makeSection(connection,  'Transfer')
 		    ]);
+
 		return this;
 	};
 
-	// create `<ul>` block element with given data
+	// Create `<ul>` block element with given data
 	Metrics.makeList = function (data, listClass) {
 		listClass = listClass || 'list';
-		if (!Utils.isArray(data)) {
+
+		if (!this.isArray(data)) {
 			throw new TypeError('`Metrics.makeList` -> `data` must be an array!');
 		}
+
 		var list = document.createElement('ul'),
 		    len  = data.length;
-		// set `class` on `list`
+
+		// Set `class` on `list`
 		list.setAttribute('class', listClass);
+
 		for (var i = 0; i < len; i += 1) {
 			var entry = data[i],
 			    item  = document.createElement('li');
-			// set text content on `item`
+
+			// Set text content on `item`
 			item.textContent = entry;
 			list.appendChild(item);
 		}
+
 		return list;
 	};
 
-	// create formatted date from timestamp
+	// Create formatted date from timestamp
 	Metrics.makeDate = function (timestamp) {
 		var date  = new Date(timestamp * 1000),
 		    month = ABBR_MONTHS_OF_YEAR[date.getMonth()],
 		    day   = date.getDate(),
 		    year  = date.getFullYear();
-		// return formatted local date
+
+		// Return formatted local date
 		return (month + ' ' + day + ', ' + year);
 	};
 
-	// create formatted line entry to display in popup
+	// Create formatted line entry to display in popup
 	Metrics.makeEntry = function (key, value, sep) {
 		sep = sep || ': ';
+
 		return (key + sep + value);
 	};
 
-	// create `<section>` block element with given data
+	// Create `<section>` block element with given data
 	Metrics.makeSection = function (data, title) {
-		// if `data` isn't an object, throw a TypeError
-		if (!Utils.isObject(data)) {
+		// If `data` isn't an object, throw a TypeError
+		if (!this.isObject(data)) {
 			throw new TypeError('`Metrics.makeSection` -> `data` must be an object!');
 		}
-		// set up our DOM subtree structure
+
+		// Set up our DOM subtree structure
 		var section = document.createElement('section'),
 		    heading = document.createElement('h3'),
 		    wrapper = document.createElement('div'),
 		    keys    = Object.keys(data),
 		    len     = keys.length;
-		// set heading title text on `heading` element
+
+		// Set heading title text on `heading` element
 		this.willSetTextContent(heading, title)
-		    // set `class` attribute on `wrapper`, append both
+		    // Set `class` attribute on `wrapper`, append both
 		    // `heading` and `wrapper` elements to `section`
 		    .willSetAttributes(wrapper, {
 		      'class': 'section'
@@ -470,39 +537,46 @@
 		      heading,
 		      wrapper
 		    ]);
-		// create the DOM subtree, fill in our data
+
+		// Create the DOM subtree, fill in our data
 		for (var i = 0; i < len; i += 1) {
 			var key     = keys[i],
 			    value   = data[key],
 			    element = document.createElement('span');
-			// if the response status text is unspecified, set the
+
+			// If the response status text is unspecified, set the
 			// value to 'Unspecified' instead of leaving it empty
 			if (!value && key === 'statusText') {
-				value = HTTP_STATUS_CODES[Utils.toString(data['status'])]
-				      ? HTTP_STATUS_CODES[Utils.toString(data['status'])]
+				value = HTTP_STATUS_CODES[this.toString(data['status'])]
+				      ? HTTP_STATUS_CODES[this.toString(data['status'])]
 				      : 'Unspecified';
 			}
-			// if the key exchange algorithm (e.g. ECDHE_RSA, other elliptic curve algorithms)
+
+			// If the key exchange algorithm (e.g. ECDHE_RSA, other elliptic curve algorithms)
 			// is unspecified, set the value to 'Unspecified' instead of leaving it empty
 			if (!value && key === 'keyExchange') {
 				value = 'Unspecified';
 			}
-			// convert timestamps to local time
+
+			// Convert timestamps to local time
 			if (key === 'validFrom' || key === 'validTo') {
-				// update `value` with formatted local date
+				// Update `value` with formatted local date
 				value = this.makeDate(value);
 			}
-			// if `value` is an array, make a list `<ul>` and append it to `element`
-			if (Utils.isArray(value)) {
+
+			// If `value` is an array, make a list `<ul>` and append it to `element`
+			if (this.isArray(value)) {
 				var toggle = document.createElement('span');
-				// change `element` to `<div>` instead of `<span>`
+
+				// Change `element` to `<div>` instead of `<span>`
 				element = document.createElement('div');
-				// set text content on `element`, attach `click` event listener to `toggle`,
+
+				// Set text content on `element`, attach `click` event listener to `toggle`,
 				// set `name` and `class` attributes on `toggle`,
 				// append `toggle` and `list` elements to `element`
 				this.willSetTextContent(element, this.makeEntry(key, ''))
 				    .willAttachListeners(toggle, {
-				      'click': this.onToggle
+				      'click': this.onToggle.bind(this)
 				    })
 				    .willSetAttributes(toggle, {
 				      'name':  'toggle',
@@ -511,14 +585,16 @@
 				    .willAppendNodes(element, [
 				      toggle, this.makeList(value)
 				    ]);
-			// otherwise, just update `element` with text content and tooltip
-			} else if (Utils.hasExternalReference(key, value)) {
-				// external reference link `<a>` element
+
+			// Otherwise, just update `element` with text content and tooltip
+			} else if (this.hasExternalReference(key, value)) {
+				// External reference link `<a>` element
 				var link = document.createElement('a'),
 				    img  = document.createElement('img');
-				// set `href` and `target` attributes on `link`
+
+				// Set `href` and `target` attributes on `link`
 				this.willSetAttributes(link, {
-				      'href':   Utils.getExternalReference(key, value),
+				      'href':   this.getExternalReference(key, value),
 				      'target': ('_' + value)
 				    })
 				    .willSetAttributes(img, {
@@ -527,9 +603,9 @@
 				      'width':  '16',
 				      'src':    'icons/external-link-16x16.png'
 				    })
-				    // set text content on `element`
+				    // Set text content on `element`
 				    .willSetTextContent(element, this.makeEntry(key, value))
-				    // set `value` tooltip via `title` attribute
+				    // Set `value` tooltip via `title` attribute
 				    // on `element`, append `link` to `element`
 				    .willSetAttributes(element, {
 				      'title': value
@@ -537,16 +613,18 @@
 				    .willAppendNodes(link, img)
 				    .willAppendNodes(element, link);
 			} else {
-				// set text content of `element` element
+				// Set text content of `element` element
 				this.willSetTextContent(element, this.makeEntry(key, value))
-				    // set `value` tooltip via `title` attribute on `element`
+				    // Set `value` tooltip via `title` attribute on `element`
 				    .willSetAttributes(element, {
 				      'title': value
 				    });
 			}
-			// append `element` to `wrapper`
+
+			// Append `element` to `wrapper`
 			this.willAppendNodes(wrapper, element);
 		}
+
 		return section;
 	};
 
@@ -554,23 +632,23 @@
 	 * Metrics getter/setter methods
 	 */
 
-	// set network event object
+	// Set network event object
 	Metrics.setNetworkEvent = function (networkEvent) {
 		this.networkEvent = networkEvent;
 		return this;
 	};
 
-	// get network event object
+	// Get network event object
 	Metrics.getNetworkEvent = function () {
 		return this.networkEvent;
 	};
 
-	// get network event response object
+	// Get network event response object
 	Metrics.getResponse = function () {
 		return this.getNetworkEvent().response;
 	};
 
-	// get request and response headers
+	// Get request and response headers
 	Metrics.getHeaders = function () {
 		var networkResponse = this.getResponse(),
 		    requestHeaders  = networkResponse.hasOwnProperty('requestHeaders')
@@ -581,63 +659,66 @@
 		    	request:  requestHeaders,
 		    	response: responseHeaders
 		    };
+
 		return combinedHeaders;
 	};
 
-	// get security details
+	// Get security details
 	Metrics.getSecurityDetails = function () {
 		return this.getResponse().securityDetails;
 	};
 
-	// get security state (e.g. 'not secure', 'neutral', 'secure')
+	// Get security state (e.g. 'not secure', 'neutral', 'secure')
 	Metrics.getSecurityState = function () {
 		return this.getResponse().securityState;
 	};
 
-	// determine if the security state is secure or not
+	// Determine if the security state is secure or not
 	Metrics.isStateSecure = function () {
-		return Utils.toBoolean(this.getSecurityState() === 'secure');
+		return this.toBool(this.getSecurityState() === 'secure');
 	};
 
-	// get remote IP address
+	// Get remote IP address
 	Metrics.getRemoteIPAddress = function () {
 		return this.getResponse().remoteIPAddress;
 	};
 
-	// get remote port (e.g. HTTP -> 80, HTTPS -> 443)
+	// Get remote port (e.g. HTTP -> 80, HTTPS -> 443)
 	Metrics.getRemotePort = function () {
 		return this.getResponse().remotePort;
 	};
 
-	// get transfer protocol type (e.g. http/1.1, h2)
+	// Get transfer protocol type (e.g. http/1.1, h2)
 	Metrics.getTransferProtocol = function () {
 		return this.getResponse().protocol;
 	};
 
-	// get exchange protocol (e.g. TLS 1.1, TLS 1.2)
+	// Get exchange protocol (e.g. TLS 1.1, TLS 1.2)
 	Metrics.getExchangeProtocol = function () {
 		return this.getSecurityDetails().protocol;
 	};
 
+	// Get key exchange algorithm
 	Metrics.getKeyExchange = function () {
 		return this.getSecurityDetails().keyExchange;
 	};
 
+	// Get key exchange group (e.g. DH) algorithm
 	Metrics.getKeyExchangeGroup = function () {
 		return this.getSecurityDetails().keyExchangeGroup;
 	};
 
-	// get cipher type (e.g. AES_128_GCM)
+	// Get cipher type (e.g. AES_128_GCM)
 	Metrics.getCipher = function () {
 		return this.getSecurityDetails().cipher;
 	};
 
-	// get certificate issuer (e.g. Comodo, DigiCert)
+	// Get certificate issuer (e.g. Comodo, DigiCert)
 	Metrics.getCertificateIssuer = function () {
 		return this.getSecurityDetails().issuer;
 	};
 
-	// get certificate subject name
+	// Get certificate subject name
 	Metrics.getCertificateSubjectName = function () {
 		return this.getSecurityDetails().subjectName;
 	};
